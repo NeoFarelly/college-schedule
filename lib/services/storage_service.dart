@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/bell_schedule.dart';
 import '../models/cached_schedule.dart';
+import '../models/notification_settings.dart';
 import '../models/site_data.dart';
 
 class StorageService {
@@ -15,6 +16,22 @@ class StorageService {
   static const _siteBellsKey = 'bells_site';
   static const _groupKey = 'group';
   static const _configKey = 'config';
+  static const _notificationKey = 'notification_settings';
+
+  NotificationSettings loadNotificationSettings() {
+    final raw = _prefs.getString(_notificationKey);
+    if (raw == null) return const NotificationSettings();
+    try {
+      return NotificationSettings.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return const NotificationSettings();
+    }
+  }
+
+  Future<void> saveNotificationSettings(NotificationSettings settings) =>
+      _prefs.setString(_notificationKey, jsonEncode(settings.toJson()));
 
   AppConfig loadConfig() {
     final raw = _prefs.getString(_configKey);

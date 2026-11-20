@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../models/bell_schedule.dart';
 import '../models/cached_schedule.dart';
 import '../models/lesson.dart';
+import '../models/notification_settings.dart';
 import '../models/site_data.dart';
 import 'parser_service.dart';
 import 'storage_service.dart';
@@ -31,6 +32,7 @@ class ScheduleController extends ChangeNotifier {
   SiteBells? siteBells;
   bool enabled = true;
   String blockMessage = '';
+  NotificationSettings notificationSettings = const NotificationSettings();
   final Map<BellDayType, BellSchedule> overrides = {};
   bool _refreshing = false;
   String _loadedToday = isoDate(DateTime.now());
@@ -88,6 +90,7 @@ class ScheduleController extends ChangeNotifier {
     final config = storage.loadConfig();
     enabled = config.enabled;
     blockMessage = config.message;
+    notificationSettings = storage.loadNotificationSettings();
     selectedGroup = storage.loadGroup();
     for (final type in BellDayType.values) {
       final override = storage.loadOverride(type);
@@ -204,6 +207,12 @@ class ScheduleController extends ChangeNotifier {
       offline = true;
       if (lessons.isEmpty) status = ScheduleStatus.error;
     }
+    notifyListeners();
+  }
+
+  Future<void> saveNotificationSettings(NotificationSettings settings) async {
+    notificationSettings = settings;
+    await storage.saveNotificationSettings(settings);
     notifyListeners();
   }
 

@@ -12,6 +12,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   http: ^1.2.0
+  flutter_local_notifications: ^19.0.0
   shared_preferences: ^2.3.0
   # intl пинится версией Flutter SDK через flutter_localizations,
   # поэтому жесткий диапазон здесь ломает pub get на части версий SDK.

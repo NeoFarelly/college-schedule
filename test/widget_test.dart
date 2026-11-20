@@ -164,7 +164,7 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('настройки открываются и показывают звонки', (tester) async {
+  testWidgets('меню шестеренки: звонки и настройки', (tester) async {
     final now = DateTime.now();
     final today = isoDate(now);
     final tomorrow = isoDate(now.add(const Duration(days: 1)));
@@ -175,12 +175,25 @@ void main() {
 
     await tester.tap(find.byTooltip('Настройки'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Расписание звонков'), findsOneWidget);
+    expect(find.text('Уведомления'), findsOneWidget);
+
+    await tester.tap(find.text('Расписание звонков'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
     await tester.scrollUntilVisible(find.text('Сбросить к звонкам сайта'), 300);
     expect(find.text('Сбросить к звонкам сайта'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Настройки'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.scrollUntilVisible(
+      find.text('Принудительно обновить расписание'),
+      300,
+    );
+    expect(find.text('Принудительно обновить расписание'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     controller.dispose();
@@ -197,8 +210,13 @@ void main() {
 
     await tester.tap(find.byTooltip('Настройки'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
     await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Расписание звонков'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.byTooltip('Настройки'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
 
     await tester.scrollUntilVisible(find.text('Принудительно обновить расписание'), 300);
     await tester.tap(find.text('Принудительно обновить расписание'));
@@ -295,6 +313,39 @@ void main() {
     expect(find.text('Приложение отключено'), findsOneWidget);
     expect(find.text('Технические работы'), findsOneWidget);
     expect(find.text('Математика'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
+
+  testWidgets('экран уведомлений: тумблеры и напоминание сохраняются',
+      (tester) async {
+    final now = DateTime.now();
+    final today = isoDate(now);
+    final tomorrow = isoDate(now.add(const Duration(days: 1)));
+    final controller = await _makeController(client: _okClient(today, tomorrow));
+    await tester.pumpWidget(ScheduleApp(controller: controller));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await tester.tap(find.byTooltip('Настройки'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Уведомления'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    await tester.tap(find.byType(Switch).first);
+    await tester.pump();
+    expect(controller.notificationSettings.enabled, isTrue);
+
+    await tester.tap(find.byType(Switch).at(1));
+    await tester.pump();
+    expect(controller.notificationSettings.showNext, isFalse);
+
+    await tester.tap(find.text('5 мин'));
+    await tester.pump();
+    expect(controller.notificationSettings.remindMinutes, 5);
 
     await tester.pumpWidget(const SizedBox());
     controller.dispose();

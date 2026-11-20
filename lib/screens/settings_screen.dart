@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../models/bell_schedule.dart';
 import '../services/schedule_controller.dart';
 import '../widgets/app_theme.dart';
-import '../widgets/bells_editor.dart';
 import '../widgets/group_picker.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -17,7 +15,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  BellDayType _type = BellDayType.weekday;
   bool _refreshing = false;
 
   Future<void> _forceRefresh() async {
@@ -37,14 +34,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _resetBells() async {
-    await widget.controller.resetOverrides();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Звонки сайта восстановлены')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
@@ -57,7 +46,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListenableBuilder(
             listenable: controller,
             builder: (context, _) {
-              final bells = controller.bellsForType(_type);
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 children: [
@@ -86,54 +74,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Расписание звонков',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: kTextPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'По умолчанию звонки с сайта колледжа. Ваши правки сохраняются отдельно.',
-                    style: TextStyle(fontSize: 13, color: kTextSecondary),
-                  ),
-                  const SizedBox(height: 12),
-                  SegmentedButton<BellDayType>(
-                    segments: const [
-                      ButtonSegment(
-                        value: BellDayType.weekday,
-                        label: Text('Будни'),
-                      ),
-                      ButtonSegment(
-                        value: BellDayType.thursday,
-                        label: Text('Четверг'),
-                      ),
-                      ButtonSegment(
-                        value: BellDayType.saturday,
-                        label: Text('Суббота'),
-                      ),
-                    ],
-                    selected: {_type},
-                    onSelectionChanged: (selection) =>
-                        setState(() => _type = selection.first),
-                  ),
-                  const SizedBox(height: 16),
-                  BellsEditor(
-                    schedule: bells,
-                    onChanged: (schedule) =>
-                        controller.saveOverride(schedule, _type),
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: _resetBells,
-                      child: const Text('Сбросить к звонкам сайта'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   const Text(
                     'Данные',
                     style: TextStyle(

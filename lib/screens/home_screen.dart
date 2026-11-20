@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -12,7 +13,8 @@ import '../widgets/lesson_tile.dart';
 import '../widgets/next_lesson_card.dart';
 import '../widgets/now_card.dart';
 import '../widgets/state_views.dart';
-import 'settings_screen.dart';
+import 'bells_screen.dart';
+import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ScheduleController controller;
@@ -70,10 +72,72 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  void _openSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => SettingsScreen(controller: widget.controller),
+  void _openMenu() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xF0101426),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.schedule, color: kTextSecondary),
+              title: const Text(
+                'Расписание звонков',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: kTextPrimary,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        BellsScreen(controller: widget.controller),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.notifications_outlined,
+                color: kTextSecondary,
+              ),
+              title: const Text(
+                'Уведомления',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: kTextPrimary,
+                ),
+              ),
+              subtitle: kIsWeb
+                  ? const Text(
+                      'Доступно в Android-приложении',
+                      style: TextStyle(fontSize: 12, color: kTextSecondary),
+                    )
+                  : null,
+              enabled: !kIsWeb,
+              onTap: kIsWeb
+                  ? null
+                  : () {
+                      Navigator.pop(ctx);
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              NotificationsScreen(controller: widget.controller),
+                        ),
+                      );
+                    },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
@@ -227,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
               ),
               IconButton(
-                onPressed: _openSettings,
+                onPressed: _openMenu,
                 icon: const Icon(Icons.settings_outlined),
                 tooltip: 'Настройки',
                 color: kTextPrimary,
