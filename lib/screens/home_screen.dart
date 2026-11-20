@@ -78,11 +78,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _pickDate() async {
     final controller = widget.controller;
+    if (controller.days.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Даты с расписанием еще не опубликованы')),
+      );
+      return;
+    }
+    final selected = DateTime.parse(controller.selectedDate);
+    final initial = controller.days.contains(controller.selectedDate)
+        ? selected
+        : DateTime.parse(controller.days.first);
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.parse(controller.selectedDate),
+      initialDate: initial,
       firstDate: DateTime(2026, 9, 1),
       lastDate: DateTime.now().add(const Duration(days: 60)),
+      selectableDayPredicate: (day) => controller.days.contains(isoDate(day)),
     );
     if (picked == null || !mounted) return;
     await controller.selectDate(isoDate(picked));
