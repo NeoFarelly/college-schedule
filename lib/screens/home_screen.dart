@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../models/cached_schedule.dart';
 import '../models/schedule_snapshot.dart';
 import '../services/schedule_controller.dart';
 import '../widgets/app_theme.dart';
@@ -75,10 +76,48 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  Future<void> _pickDate() async {
+    final controller = widget.controller;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.parse(controller.selectedDate),
+      firstDate: DateTime(2026, 9, 1),
+      lastDate: DateTime.now().add(const Duration(days: 60)),
+    );
+    if (picked == null || !mounted) return;
+    await controller.selectDate(isoDate(picked));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackground,
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: SizedBox(
+            height: 52,
+            child: OutlinedButton(
+              onPressed: _pickDate,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.calendar_month_outlined, size: 20),
+                  const SizedBox(width: 10),
+                  Text(
+                    DateFormat('EEEE, d MMMM', 'ru').format(
+                      DateTime.parse(widget.controller.selectedDate),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Icon(Icons.expand_more, size: 20),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           const Wallpaper(),
