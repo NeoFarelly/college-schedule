@@ -16,6 +16,9 @@ class ParserService {
 
   bool get isMock => false;
 
+  Future<AppConfig> fetchConfig() async =>
+      AppConfig.fromJson(await _getJson('config.json'));
+
   Future<ScheduleManifest> fetchManifest() async =>
       ScheduleManifest.fromJson(await _getJson('index.json'));
 

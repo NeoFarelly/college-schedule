@@ -14,6 +14,20 @@ class StorageService {
   static const _manifestKey = 'manifest';
   static const _siteBellsKey = 'bells_site';
   static const _groupKey = 'group';
+  static const _configKey = 'config';
+
+  AppConfig loadConfig() {
+    final raw = _prefs.getString(_configKey);
+    if (raw == null) return const AppConfig(enabled: true, message: '');
+    try {
+      return AppConfig.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return const AppConfig(enabled: true, message: '');
+    }
+  }
+
+  Future<void> saveConfig(AppConfig config) =>
+      _prefs.setString(_configKey, jsonEncode(config.toJson()));
 
   String loadGroup() => _prefs.getString(_groupKey) ?? '21Н';
 

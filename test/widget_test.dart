@@ -57,6 +57,13 @@ final _bellsJson = {
 http.Client _okClient(String today, String tomorrow) => MockClient((request) async {
       final path = request.url.path;
       const headers = {'content-type': 'application/json; charset=utf-8'};
+      if (path.endsWith('config.json')) {
+        return http.Response(
+          jsonEncode({'enabled': true, 'message': ''}),
+          200,
+          headers: headers,
+        );
+      }
       if (path.endsWith('index.json')) {
         return http.Response(
           jsonEncode({
@@ -272,6 +279,22 @@ void main() {
     await tester.tap(find.text(label));
     await tester.pump();
     expect(controller.selectedDate, today);
+
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
+
+  testWidgets('kill-switch: отключенное приложение показывает заглушку',
+      (tester) async {
+    final controller = await _makeController(prefs: {
+      'config': jsonEncode({'enabled': false, 'message': 'Технические работы'}),
+    });
+    await tester.pumpWidget(ScheduleApp(controller: controller));
+    await tester.pump();
+
+    expect(find.text('Приложение отключено'), findsOneWidget);
+    expect(find.text('Технические работы'), findsOneWidget);
+    expect(find.text('Математика'), findsNothing);
 
     await tester.pumpWidget(const SizedBox());
     controller.dispose();

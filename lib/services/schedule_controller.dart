@@ -29,6 +29,8 @@ class ScheduleController extends ChangeNotifier {
   bool offline = false;
   DateTime? updatedAt;
   SiteBells? siteBells;
+  bool enabled = true;
+  String blockMessage = '';
   final Map<BellDayType, BellSchedule> overrides = {};
   bool _refreshing = false;
   String _loadedToday = isoDate(DateTime.now());
@@ -83,6 +85,9 @@ class ScheduleController extends ChangeNotifier {
   }
 
   Future<void> loadCached() async {
+    final config = storage.loadConfig();
+    enabled = config.enabled;
+    blockMessage = config.message;
     selectedGroup = storage.loadGroup();
     for (final type in BellDayType.values) {
       final override = storage.loadOverride(type);
@@ -114,6 +119,18 @@ class ScheduleController extends ChangeNotifier {
       notifyListeners();
     }
     try {
+      try {
+        final config = await parser.fetchConfig();
+        enabled = config.enabled;
+        blockMessage = config.message;
+        await storage.saveConfig(config);
+      } catch (_) {
+        // Без сети оставляем последний известный флаг.
+      }
+      if (!enabled) {
+        notifyListeners();
+        return true;
+      }
       final manifest = await parser.fetchManifest();
       days = manifest.days;
       manifestGroups = manifest.groups;

@@ -57,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       widget.controller.ensureToday();
+      unawaited(widget.controller.refresh());
     }
   }
 
@@ -143,6 +144,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               listenable: widget.controller,
               builder: (context, _) {
                 final controller = widget.controller;
+                if (!controller.enabled) {
+                  return MessageStateView(
+                    icon: Icons.lock_outline,
+                    title: 'Приложение отключено',
+                    subtitle: controller.blockMessage.isNotEmpty
+                        ? controller.blockMessage
+                        : 'Владелец временно отключил приложение.',
+                  );
+                }
                 if (controller.status == ScheduleStatus.loading &&
                     controller.lessons.isEmpty) {
                   return const Center(

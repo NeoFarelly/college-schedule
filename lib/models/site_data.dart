@@ -1,6 +1,20 @@
 import 'bell_schedule.dart';
 import 'lesson.dart';
 
+class AppConfig {
+  final bool enabled;
+  final String message;
+
+  const AppConfig({required this.enabled, required this.message});
+
+  factory AppConfig.fromJson(Map<String, dynamic> json) => AppConfig(
+        enabled: json['enabled'] as bool? ?? true,
+        message: json['message'] as String? ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {'enabled': enabled, 'message': message};
+}
+
 class ScheduleManifest {
   final List<String> days;
   final List<String> groups;
