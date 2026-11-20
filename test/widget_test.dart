@@ -250,4 +250,30 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     controller.dispose();
   });
+
+  testWidgets('день без пар у группы затемнен и не нажимается', (tester) async {
+    final now = DateTime.now();
+    final today = isoDate(now);
+    final tomorrow = isoDate(now.add(const Duration(days: 1)));
+    final controller = await _makeController(client: _okClient(today, tomorrow));
+    await tester.pumpWidget(ScheduleApp(controller: controller));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await tester.tap(find.text('Группа 21Н'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('21О'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final label = DateFormat('EE d.MM', 'ru')
+        .format(now.add(const Duration(days: 1)));
+    await tester.tap(find.text(label));
+    await tester.pump();
+    expect(controller.selectedDate, today);
+
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
 }

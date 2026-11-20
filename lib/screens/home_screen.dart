@@ -79,22 +79,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _pickDate() async {
     final controller = widget.controller;
-    if (controller.days.isEmpty) {
+    final selectable =
+        controller.days.where(controller.isDayAvailable).toList();
+    if (selectable.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Даты с расписанием еще не опубликованы')),
+        SnackBar(
+          content: Text(
+            'Для группы ${controller.selectedGroup} нет дней с парами',
+          ),
+        ),
       );
       return;
     }
-    final selected = DateTime.parse(controller.selectedDate);
-    final initial = controller.days.contains(controller.selectedDate)
-        ? selected
-        : DateTime.parse(controller.days.first);
+    final initial = selectable.contains(controller.selectedDate)
+        ? DateTime.parse(controller.selectedDate)
+        : DateTime.parse(selectable.first);
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(2026, 9, 1),
       lastDate: DateTime.now().add(const Duration(days: 60)),
-      selectableDayPredicate: (day) => controller.days.contains(isoDate(day)),
+      selectableDayPredicate: (day) => controller.isDayAvailable(isoDate(day)),
     );
     if (picked == null || !mounted) return;
     await controller.selectDate(isoDate(picked));
@@ -251,24 +256,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   final date = controller.days[index];
                   final label = DateFormat('EE d.MM', 'ru')
                       .format(DateTime.parse(date));
+                  final enabled = controller.isDayAvailable(date);
+                  final isSelected =
+                      date == controller.selectedDate && enabled;
                   return ChoiceChip(
                     label: Text(label),
-                    selected: date == controller.selectedDate,
+                    selected: isSelected,
                     showCheckmark: false,
-                    onSelected: (_) => controller.selectDate(date),
+                    onSelected: enabled
+                        ? (_) => controller.selectDate(date)
+                        : null,
                     selectedColor: Colors.white,
-                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                    backgroundColor:
+                        Colors.white.withValues(alpha: enabled ? 0.08 : 0.03),
+                    disabledColor: Colors.white.withValues(alpha: 0.03),
                     side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.16),
+                      color: Colors.white
+                          .withValues(alpha: enabled ? 0.16 : 0.06),
                     ),
                     labelStyle: TextStyle(
                       fontSize: 14,
-                      fontWeight: date == controller.selectedDate
-                          ? FontWeight.w700
-                          : FontWeight.w600,
-                      color: date == controller.selectedDate
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w600,
+                      color: isSelected
                           ? Colors.black
-                          : kTextSecondary,
+                          : enabled
+                              ? kTextSecondary
+                              : kTextSecondary.withValues(alpha: 0.38),
                     ),
                   );
                 },

@@ -24,6 +24,7 @@ class ScheduleController extends ChangeNotifier {
   String selectedDate = isoDate(DateTime.now());
   String selectedGroup = defaultGroup;
   Map<String, List<Lesson>> dayGroups = {};
+  final Map<String, Set<String>> availability = {};
   ScheduleStatus status = ScheduleStatus.loading;
   bool offline = false;
   DateTime? updatedAt;
@@ -33,6 +34,47 @@ class ScheduleController extends ChangeNotifier {
   String _loadedToday = isoDate(DateTime.now());
 
   List<Lesson> get lessons => dayGroups[selectedGroup] ?? const [];
+
+  bool isDayAvailable(String date) {
+    final groups = availability[date];
+    if (groups != null) return groups.contains(selectedGroup);
+    return days.contains(date);
+  }
+
+  void _markAvailability(String date, Map<String, List<Lesson>> groups) {
+    availability[date] = groups.entries
+        .where((e) => e.value.isNotEmpty)
+        .map((e) => e.key)
+        .toSet();
+  }
+
+  Future<void> _loadAvailability() async {
+    final entries = await Future.wait(days.map((date) async {
+      final cached = storage.loadDay(date);
+      if (cached != null && cached.date == date) {
+        return MapEntry(date, cached.groups);
+      }
+      try {
+        final day = await parser.fetchDay(date);
+        await storage.saveDay(CachedSchedule(
+          date: date,
+          updatedAt: DateTime.now(),
+          groups: day.groups,
+        ));
+        return MapEntry(date, day.groups);
+      } catch (_) {
+        return MapEntry(date, null);
+      }
+    }));
+    for (final entry in entries) {
+      final groups = entry.value;
+      if (groups == null) {
+        availability.remove(entry.key);
+      } else {
+        _markAvailability(entry.key, groups);
+      }
+    }
+  }
 
   List<String> get availableGroups {
     final set = <String>{...manifestGroups, ...dayGroups.keys};
@@ -53,6 +95,7 @@ class ScheduleController extends ChangeNotifier {
     final cache = storage.loadDay(selectedDate);
     if (cache != null && cache.date == selectedDate) {
       dayGroups = cache.groups;
+      _markAvailability(selectedDate, dayGroups);
       updatedAt = cache.updatedAt;
       status = ScheduleStatus.ready;
     } else {
@@ -75,6 +118,7 @@ class ScheduleController extends ChangeNotifier {
       days = manifest.days;
       manifestGroups = manifest.groups;
       await storage.saveManifest(manifest);
+      await _loadAvailability();
       try {
         final bells = await parser.fetchBells();
         siteBells = bells;
@@ -105,6 +149,7 @@ class ScheduleController extends ChangeNotifier {
     }
     final result = await parser.fetchDay(date);
     dayGroups = result.groups;
+    _markAvailability(date, dayGroups);
     updatedAt = DateTime.now();
     status = ScheduleStatus.ready;
     await storage.saveDay(CachedSchedule(
@@ -127,6 +172,7 @@ class ScheduleController extends ChangeNotifier {
     final cache = storage.loadDay(date);
     if (cache != null && cache.date == date) {
       dayGroups = cache.groups;
+      _markAvailability(date, dayGroups);
       updatedAt = cache.updatedAt;
       status = ScheduleStatus.ready;
     } else {
