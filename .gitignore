@@ -40,6 +40,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+**/android/**/GeneratedPluginRegistrant.java
 
 # Local configuration and signing
 /android/local.properties
