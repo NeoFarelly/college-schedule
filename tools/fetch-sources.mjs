@@ -34,9 +34,15 @@ for (const date of days.slice(0, 21)) {
 }
 
 const bellsPage = await (await get('https://guo-mpk.by/raspisanie-zvonkov/')).text();
-const fileParam = bellsPage.match(/get_viewer&file=([^&"#]+)/);
-if (!fileParam) throw new Error('bells pdf url not found');
-const pdfUrl = decodeURIComponent(fileParam[1]);
+const fileParam = bellsPage.match(/get_viewer&(?:amp;)?file=([^&"#]+)/);
+let pdfUrl;
+if (fileParam) {
+  pdfUrl = decodeURIComponent(fileParam[1]);
+} else {
+  const direct = bellsPage.match(/https:\/\/guo-mpk\.by\/wp-content\/uploads\/[^"'&\s<>]+\.pdf/);
+  if (!direct) throw new Error('bells pdf url not found');
+  pdfUrl = direct[0];
+}
 const pdf = Buffer.from(await (await get(pdfUrl)).arrayBuffer());
 await writeFile('sources/bells.pdf', pdf);
 await writeFile('sources/bells-url.txt', pdfUrl);
