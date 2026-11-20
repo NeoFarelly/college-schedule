@@ -1,0 +1,27 @@
+name: college_schedule
+description: Расписание пар колледжа. Офлайн-кэш, живой таймер пары, крупный кабинет следующей пары.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  http: ^1.2.0
+  html: ^0.15.4
+  shared_preferences: ^2.3.0
+  # intl пинится версией Flutter SDK через flutter_localizations,
+  # поэтому жесткий диапазон здесь ломает pub get на части версий SDK.
+  intl: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
