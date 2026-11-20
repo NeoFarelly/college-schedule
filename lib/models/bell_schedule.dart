@@ -10,6 +10,11 @@ String formatClock(DateTime time) {
   return '$h:$m';
 }
 
+int parseClock(String label) {
+  final parts = label.split(':');
+  return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+}
+
 class BellPeriod {
   final int startMinutes;
   final int endMinutes;
@@ -57,8 +62,8 @@ class BellSchedule {
     final list = (json['periods'] as List<dynamic>)
         .map((e) => BellPeriod.fromJson(e as Map<String, dynamic>))
         .toList();
-    if (list.length != 6) {
-      throw const FormatException('В расписании звонков должно быть 6 пар');
+    if (list.length < 6 || list.length > 7) {
+      throw const FormatException('В расписании звонков должно быть 6 или 7 пар');
     }
     return BellSchedule(list);
   }

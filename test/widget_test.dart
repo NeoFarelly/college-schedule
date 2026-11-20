@@ -3,29 +3,90 @@ import 'dart:convert';
 import 'package:college_schedule/app.dart';
 import 'package:college_schedule/models/cached_schedule.dart';
 import 'package:college_schedule/models/lesson.dart';
-import 'package:college_schedule/services/schedule_controller.dart';
 import 'package:college_schedule/services/parser_service.dart';
+import 'package:college_schedule/services/schedule_controller.dart';
 import 'package:college_schedule/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _FailingParser extends ParserService {
-  @override
-  Future<List<Lesson>> fetchSchedule(String group) async =>
-      throw Exception('сеть недоступна');
-}
+const _todayLesson = Lesson(
+  number: 1,
+  subject: 'Математика',
+  room: '305',
+  teacher: 'Смирнова А. П.',
+);
+const _tomorrowLesson = Lesson(
+  number: 1,
+  subject: 'Физика',
+  room: '402',
+  teacher: 'Гусев П. А.',
+);
+
+final _bellsJson = {
+  'weekday': [
+    {'start': '08:30', 'end': '10:00'},
+    {'start': '10:10', 'end': '11:40'},
+    {'start': '12:10', 'end': '13:40'},
+    {'start': '13:50', 'end': '15:20'},
+    {'start': '15:30', 'end': '17:00'},
+    {'start': '17:10', 'end': '18:40'},
+  ],
+  'saturday': [
+    {'start': '08:30', 'end': '09:40'},
+    {'start': '09:50', 'end': '11:00'},
+    {'start': '11:10', 'end': '12:20'},
+    {'start': '12:30', 'end': '13:40'},
+    {'start': '13:50', 'end': '15:00'},
+    {'start': '15:10', 'end': '16:20'},
+  ],
+};
+
+http.Client _okClient(String today, String tomorrow) => MockClient((request) async {
+      final path = request.url.path;
+      const headers = {'content-type': 'application/json; charset=utf-8'};
+      if (path.endsWith('index.json')) {
+        return http.Response(
+          jsonEncode({'group': '21Н', 'days': [today, tomorrow], 'bellsUpdatedAt': ''}),
+          200,
+          headers: headers,
+        );
+      }
+      if (path.endsWith('day-$today.json')) {
+        return http.Response(
+          jsonEncode({'date': today, 'lessons': [_todayLesson.toJson()]}),
+          200,
+          headers: headers,
+        );
+      }
+      if (path.endsWith('day-$tomorrow.json')) {
+        return http.Response(
+          jsonEncode({'date': tomorrow, 'lessons': [_tomorrowLesson.toJson()]}),
+          200,
+          headers: headers,
+        );
+      }
+      if (path.endsWith('bells.json')) {
+        return http.Response(jsonEncode(_bellsJson), 200, headers: headers);
+      }
+      return http.Response('not found', 404);
+    });
+
+http.Client _failClient() => MockClient((_) async => http.Response('err', 500));
 
 Future<ScheduleController> _makeController({
   Map<String, Object> prefs = const {},
-  ParserService? parser,
+  http.Client? client,
 }) async {
   SharedPreferences.setMockInitialValues(prefs);
   final storage = StorageService(await SharedPreferences.getInstance());
   final controller = ScheduleController(
     storage: storage,
-    parser: parser ?? ParserService(),
+    parser: ParserService(client: client ?? _failClient()),
   );
   await controller.loadCached();
   return controller;
@@ -36,68 +97,12 @@ void main() {
     await initializeDateFormatting('ru');
   });
 
-  testWidgets('группа не указана: пустое состояние и вход в настройки',
-      (tester) async {
+  testWidgets('ошибка сети без кэша: состояние ошибки и повтор', (tester) async {
     final controller = await _makeController();
     await tester.pumpWidget(ScheduleApp(controller: controller));
     await tester.pump();
 
-    expect(find.text('Укажите учебную группу'), findsOneWidget);
-    await tester.tap(find.text('Открыть настройки'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-
-    expect(find.text('Настройки'), findsOneWidget);
-    expect(find.text('Учебная группа'), findsOneWidget);
-    expect(find.text('Расписание звонков'), findsOneWidget);
-
-    await tester.pumpWidget(const SizedBox());
-    controller.dispose();
-  });
-
-  testWidgets('кэш отображается сразу, до ответа сети', (tester) async {
-    final now = DateTime.now();
-    final cache = {
-      'group': 'ИС-21',
-      'date': isoDate(now),
-      'updatedAt': now.toIso8601String(),
-      'isMock': true,
-      'lessons': [
-        const Lesson(
-          number: 1,
-          subject: 'Математика',
-          room: '305',
-          teacher: 'Смирнова А. П.',
-        ).toJson(),
-      ],
-    };
-    final controller = await _makeController(
-      prefs: {'group': 'ИС-21', 'schedule_cache': jsonEncode(cache)},
-    );
-    await tester.pumpWidget(ScheduleApp(controller: controller));
-    await tester.pump();
-
-    expect(find.text('Группа ИС-21'), findsOneWidget);
-    expect(find.text('Математика'), findsWidgets);
-    expect(find.text('305'), findsWidgets);
-
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpWidget(const SizedBox());
-    controller.dispose();
-  });
-
-  testWidgets('ошибка сети без кэша: состояние ошибки и повтор',
-      (tester) async {
-    final controller = await _makeController(
-      prefs: {'group': 'ИС-21'},
-      parser: _FailingParser(),
-    );
-    await tester.pumpWidget(ScheduleApp(controller: controller));
-    await tester.pump();
-
     expect(find.text('Не удалось загрузить расписание'), findsOneWidget);
-    expect(find.text('Повторить'), findsOneWidget);
-
     await tester.tap(find.text('Повторить'));
     await tester.pump();
     expect(find.text('Не удалось загрузить расписание'), findsOneWidget);
@@ -106,26 +111,97 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('сохранение группы из настроек запускает загрузку',
-      (tester) async {
-    final controller = await _makeController();
+  testWidgets('кэш отображается сразу, до ответа сети', (tester) async {
+    final now = DateTime.now();
+    final today = isoDate(now);
+    final controller = await _makeController(prefs: {
+      'manifest': jsonEncode({'days': [today], 'bellsUpdatedAt': ''}),
+      'bells_site': jsonEncode(_bellsJson),
+      'day_$today': jsonEncode(CachedSchedule(
+        group: '21Н',
+        date: today,
+        updatedAt: now,
+        isMock: false,
+        lessons: [_todayLesson],
+      ).toJson()),
+    });
     await tester.pumpWidget(ScheduleApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.text('Открыть настройки'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Группа 21Н'), findsOneWidget);
+    expect(find.text('Математика'), findsWidgets);
+    expect(find.textContaining('Офлайн'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'ПО-33');
-    await tester.tap(find.text('Сохранить группу'));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
+
+  testWidgets('настройки открываются и показывают звонки', (tester) async {
+    final now = DateTime.now();
+    final today = isoDate(now);
+    final tomorrow = isoDate(now.add(const Duration(days: 1)));
+    final controller = await _makeController(client: _okClient(today, tomorrow));
+    await tester.pumpWidget(ScheduleApp(controller: controller));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(controller.group, 'ПО-33');
-    expect(controller.status, ScheduleStatus.ready);
-    if (DateTime.now().weekday != DateTime.sunday) {
-      expect(controller.lessons, isNotEmpty);
-    }
+    await tester.tap(find.byTooltip('Настройки'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Расписание звонков'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Сбросить к звонкам сайта'), 300);
+    expect(find.text('Сбросить к звонкам сайта'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
+
+  testWidgets('принудительное обновление показывает результат', (tester) async {
+    final now = DateTime.now();
+    final today = isoDate(now);
+    final tomorrow = isoDate(now.add(const Duration(days: 1)));
+    final controller = await _makeController(client: _okClient(today, tomorrow));
+    await tester.pumpWidget(ScheduleApp(controller: controller));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await tester.tap(find.byTooltip('Настройки'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.scrollUntilVisible(find.text('Принудительно обновить расписание'), 300);
+    await tester.tap(find.text('Принудительно обновить расписание'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Расписание обновлено'), findsOneWidget);
+    expect(controller.lessons, isNotEmpty);
+
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
+
+  testWidgets('переключение дня меняет расписание', (tester) async {
+    final now = DateTime.now();
+    final today = isoDate(now);
+    final tomorrow = isoDate(now.add(const Duration(days: 1)));
+    final controller = await _makeController(client: _okClient(today, tomorrow));
+    await tester.pumpWidget(ScheduleApp(controller: controller));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Математика'), findsWidgets);
+    final label = DateFormat('EE d.MM', 'ru').format(now.add(const Duration(days: 1)));
+    await tester.tap(find.text(label));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(controller.selectedDate, tomorrow);
+    expect(find.text('Физика'), findsWidgets);
 
     await tester.pumpWidget(const SizedBox());
     controller.dispose();

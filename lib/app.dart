@@ -22,8 +22,8 @@ class ScheduleApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: buildDarkTheme(),
-      darkTheme: buildDarkTheme(),
+      theme: buildGlassTheme(),
+      darkTheme: buildGlassTheme(),
       themeMode: ThemeMode.dark,
       home: HomeScreen(controller: controller),
     );

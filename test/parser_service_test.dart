@@ -1,42 +1,81 @@
-import 'package:college_schedule/models/lesson.dart';
+import 'dart:convert';
+
 import 'package:college_schedule/services/parser_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 void main() {
-  final parser = ParserService();
+  final bellsJson = {
+    'weekday': [
+      {'start': '08:30', 'end': '10:00'},
+      {'start': '10:10', 'end': '11:40'},
+      {'start': '12:10', 'end': '13:40'},
+      {'start': '13:50', 'end': '15:20'},
+      {'start': '15:30', 'end': '17:00'},
+      {'start': '17:10', 'end': '18:40'},
+    ],
+    'saturday': [
+      {'start': '08:30', 'end': '09:40'},
+      {'start': '09:50', 'end': '11:00'},
+      {'start': '11:10', 'end': '12:20'},
+      {'start': '12:30', 'end': '13:40'},
+      {'start': '13:50', 'end': '15:00'},
+      {'start': '15:10', 'end': '16:20'},
+    ],
+  };
+  final client = MockClient((request) async {
+    final path = request.url.path;
+    if (path.endsWith('index.json')) {
+      return http.Response(
+        jsonEncode({'group': '21Н', 'days': ['2026-11-20'], 'bellsUpdatedAt': ''}),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      );
+    }
+    if (path.endsWith('day-2026-11-20.json')) {
+      return http.Response(
+        jsonEncode({
+          'date': '2026-11-20',
+          'lessons': [
+            {'number': 1, 'subject': 'ФТТ', 'room': '213', 'teacher': 'Юхновец С.В.'},
+          ],
+        }),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      );
+    }
+    if (path.endsWith('bells.json')) {
+      return http.Response(jsonEncode(bellsJson), 200);
+    }
+    return http.Response('not found', 404);
+  });
+  final parser = ParserService(client: client);
 
-  test('mock помечен как демо-данные', () {
-    expect(parser.isMock, isTrue);
+  test('манифест читается', () async {
+    final manifest = await parser.fetchManifest();
+    expect(manifest.days, ['2026-11-20']);
   });
 
-  test('расписание упорядочено и поля заполнены', () async {
-    final lessons = await parser.fetchSchedule('ИС-21');
-    if (DateTime.now().weekday == DateTime.sunday) {
-      expect(lessons, isEmpty);
-      return;
-    }
-    expect(lessons, isNotEmpty);
-    for (var i = 0; i < lessons.length; i++) {
-      expect(lessons[i].number, i + 1);
-      expect(lessons[i].subject, isNotEmpty);
-      expect(lessons[i].room, isNotEmpty);
-      expect(lessons[i].teacher, isNotEmpty);
-    }
+  test('день парсится в уроки', () async {
+    final lessons = await parser.fetchDay('2026-11-20');
+    expect(lessons.single.subject, 'ФТТ');
+    expect(lessons.single.room, '213');
+    expect(lessons.single.teacher, 'Юхновец С.В.');
   });
 
-  test('для одной группы результат детерминирован', () async {
-    final a = await parser.fetchSchedule('ИС-21');
-    final b = await parser.fetchSchedule('ИС-21');
-    expect(
-      a.map((Lesson l) => l.toJson()).toList(),
-      b.map((Lesson l) => l.toJson()).toList(),
-    );
+  test('звонки сайта парсятся в минуты', () async {
+    final bells = await parser.fetchBells();
+    expect(bells.weekday.periods.first.startMinutes, 510);
+    expect(bells.weekday.periods.first.endMinutes, 600);
+    expect(bells.saturday.periods.first.endMinutes, 580);
   });
 
-  test('суббота: сокращенный день, не больше трех пар', () async {
-    final lessons = await parser.fetchSchedule('ИС-21');
-    if (DateTime.now().weekday == DateTime.saturday) {
-      expect(lessons.length, 3);
-    }
+  test('404 дает ошибку, а не пустые данные', () async {
+    expect(parser.fetchDay('2026-11-21'), throwsA(isA<Exception>()));
+  });
+
+  test('источник не демо-данные', () {
+    expect(parser.isMock, isFalse);
   });
 }

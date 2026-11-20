@@ -21,8 +21,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final Timer _ticker;
   final ValueNotifier<DateTime> _now = ValueNotifier(DateTime.now());
   final ValueNotifier<int?> _currentPair = ValueNotifier(null);
@@ -42,8 +41,9 @@ class _HomeScreenState extends State<HomeScreen>
     final t = DateTime.now();
     _now.value = t;
     final controller = widget.controller;
-    final snapshot = snapshotAt(controller.lessons, controller.bellsFor(t), t);
-    final number = snapshot.current?.number;
+    final number = controller.isToday
+        ? snapshotAt(controller.lessons, controller.bellsFor(t), t).current?.number
+        : null;
     if (number != _currentPair.value) _currentPair.value = number;
     if (t.day != _lastDay) {
       _lastDay = t.day;
@@ -79,72 +79,68 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackground,
-      body: SafeArea(
-        child: ListenableBuilder(
-          listenable: widget.controller,
-          builder: (context, _) {
-            final controller = widget.controller;
-            if (controller.group.isEmpty) {
-              return MessageStateView(
-                title: 'Укажите учебную группу',
-                subtitle:
-                    'Расписание загружается для вашей группы и сохраняется на устройстве.',
-                actionLabel: 'Открыть настройки',
-                onAction: _openSettings,
-              );
-            }
-            if (controller.status == ScheduleStatus.loading &&
-                controller.lessons.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(strokeWidth: 2),
-                    SizedBox(height: 16),
-                    Text(
-                      'Загружаю расписание',
-                      style: TextStyle(fontSize: 15, color: kTextSecondary),
+      body: Stack(
+        children: [
+          const Wallpaper(),
+          SafeArea(
+            child: ListenableBuilder(
+              listenable: widget.controller,
+              builder: (context, _) {
+                final controller = widget.controller;
+                if (controller.status == ScheduleStatus.loading &&
+                    controller.lessons.isEmpty) {
+                  return const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(strokeWidth: 2),
+                        SizedBox(height: 16),
+                        Text(
+                          'Загружаю расписание',
+                          style: TextStyle(fontSize: 15, color: kTextSecondary),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
-            }
-            if (controller.status == ScheduleStatus.error &&
-                controller.lessons.isEmpty) {
-              return MessageStateView(
-                icon: Icons.cloud_off_outlined,
-                title: 'Не удалось загрузить расписание',
-                subtitle:
-                    'Проверьте подключение к интернету и попробуйте снова.',
-                actionLabel: 'Повторить',
-                onAction: () => controller.refresh(),
-              );
-            }
-            if (controller.lessons.isEmpty) {
-              final sunday = DateTime.now().weekday == DateTime.sunday;
-              return MessageStateView(
-                icon: Icons.event_busy_outlined,
-                title: 'Сегодня пар нет',
-                subtitle: sunday
-                    ? 'Воскресенье: выходной день.'
-                    : 'На этот день занятий в расписании нет.',
-              );
-            }
-            return _buildSchedule(controller);
-          },
-        ),
+                  );
+                }
+                if (controller.status == ScheduleStatus.error &&
+                    controller.lessons.isEmpty) {
+                  return MessageStateView(
+                    icon: Icons.cloud_off_outlined,
+                    title: 'Не удалось загрузить расписание',
+                    subtitle:
+                        'Проверьте подключение к интернету и попробуйте снова.',
+                    actionLabel: 'Повторить',
+                    onAction: () => controller.refresh(),
+                  );
+                }
+                if (controller.lessons.isEmpty) {
+                  final published = controller.days.contains(controller.selectedDate);
+                  return MessageStateView(
+                    icon: Icons.event_busy_outlined,
+                    title: 'В этот день пар нет',
+                    subtitle: published
+                        ? 'У группы 21Н в этот день занятий нет.'
+                        : 'Расписание на этот день еще не опубликовано на сайте.',
+                  );
+                }
+                return _buildSchedule(controller);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSchedule(ScheduleController controller) {
-    final now = DateTime.now();
-    final dateLabel = DateFormat('EEEE, d MMMM', 'ru').format(now);
+    final selected = DateTime.parse(controller.selectedDate);
+    final dateLabel = DateFormat('EEEE, d MMMM', 'ru').format(selected);
     final capitalized = dateLabel[0].toUpperCase() + dateLabel.substring(1);
 
     return RefreshIndicator(
       color: kAccent,
-      backgroundColor: kSurfaceHigh,
+      backgroundColor: const Color(0xE61C2333),
       onRefresh: () async {
         await controller.refresh();
       },
@@ -167,12 +163,9 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      'Группа ${controller.group}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: kTextSecondary,
-                      ),
+                    const Text(
+                      'Группа 21Н',
+                      style: TextStyle(fontSize: 14, color: kTextSecondary),
                     ),
                   ],
                 ),
@@ -188,28 +181,62 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           const SizedBox(height: 6),
           _StatusLine(controller: controller),
+          const SizedBox(height: 12),
+          if (controller.days.isNotEmpty)
+            SizedBox(
+              height: 44,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: controller.days.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final date = controller.days[index];
+                  final label = DateFormat('EE d.MM', 'ru')
+                      .format(DateTime.parse(date));
+                  return ChoiceChip(
+                    label: Text(label),
+                    selected: date == controller.selectedDate,
+                    showCheckmark: false,
+                    onSelected: (_) => controller.selectDate(date),
+                    selectedColor: Colors.white.withValues(alpha: 0.22),
+                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.16),
+                    ),
+                    labelStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: date == controller.selectedDate
+                          ? kTextPrimary
+                          : kTextSecondary,
+                    ),
+                  );
+                },
+              ),
+            ),
           const SizedBox(height: 16),
-          ValueListenableBuilder<DateTime>(
-            valueListenable: _now,
-            builder: (context, now, _) {
-              final snapshot = snapshotAt(
-                controller.lessons,
-                controller.bellsFor(now),
-                now,
-              );
-              return Column(
-                children: [
-                  NowCard(snapshot: snapshot, now: now),
-                  const SizedBox(height: 12),
-                  NextLessonCard(snapshot: snapshot),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Сегодня',
-            style: TextStyle(
+          if (controller.isToday)
+            ValueListenableBuilder<DateTime>(
+              valueListenable: _now,
+              builder: (context, now, _) {
+                final snapshot = snapshotAt(
+                  controller.lessons,
+                  controller.bellsFor(now),
+                  now,
+                );
+                return Column(
+                  children: [
+                    NowCard(snapshot: snapshot, now: now),
+                    const SizedBox(height: 12),
+                    NextLessonCard(snapshot: snapshot),
+                  ],
+                );
+              },
+            ),
+          if (controller.isToday) const SizedBox(height: 24),
+          Text(
+            controller.isToday ? 'Сегодня' : 'Пары за выбранный день',
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: kTextPrimary,
@@ -220,7 +247,7 @@ class _HomeScreenState extends State<HomeScreen>
             valueListenable: _currentPair,
             builder: (context, currentNumber, _) {
               final t = DateTime.now();
-              final bells = controller.bellsFor(t);
+              final bells = controller.bellsFor(selected);
               return Column(
                 children: [
                   for (final lesson in controller.lessons)
@@ -228,7 +255,8 @@ class _HomeScreenState extends State<HomeScreen>
                       lesson: lesson,
                       period: bells.periodFor(lesson.number),
                       isCurrent: lesson.number == currentNumber,
-                      isPast: _isPast(bells.periodFor(lesson.number)?.endMinutes, t),
+                      isPast: controller.isToday &&
+                          _isPast(bells.periodFor(lesson.number)?.endMinutes, t),
                     ),
                 ],
               );
@@ -269,7 +297,6 @@ class _StatusLine extends StatelessWidget {
     } else {
       text = timeText.isEmpty ? 'Данные не загружены' : 'Обновлено в $timeText';
     }
-    final mockSuffix = controller.isMock ? ', демо-данные' : '';
     return Row(
       children: [
         Icon(
@@ -282,7 +309,7 @@ class _StatusLine extends StatelessWidget {
         const SizedBox(width: 6),
         Expanded(
           child: Text(
-            '$text$mockSuffix',
+            '$text, источник guo-mpk.by',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 12, color: kTextSecondary),

@@ -114,7 +114,6 @@ class _TimeButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const _TimeButton({
-    super.key,
     required this.label,
     required this.value,
     required this.onPressed,

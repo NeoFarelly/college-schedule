@@ -1,17 +1,15 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
-// Палитра: черный AMOLED, нейтральные поверхности, один янтарный акцент
-// для кабинета следующей пары и индикатора идущей пары.
-const Color kBackground = Color(0xFF000000);
-const Color kSurface = Color(0xFF141414);
-const Color kSurfaceHigh = Color(0xFF1E1E1E);
-const Color kBorder = Color(0xFF2A2A2A);
-const Color kTextPrimary = Color(0xFFF2F2F2);
-const Color kTextSecondary = Color(0xFFA3A3A3);
-const Color kAccent = Color(0xFFFFB000);
-const Color kError = Color(0xFFFF6B6B);
+// Направление владельца: iOS liquid glass, полный override R-10 (стекло везде).
+// Обои-подложка нужны материалу стекла для преломления; акцент один, iOS blue.
+const Color kBackground = Color(0xFF070B18);
+const Color kTextPrimary = Color(0xFFF5F7FA);
+const Color kTextSecondary = Color(0xFFA8B0C2);
+const Color kAccent = Color(0xFF0A84FF);
+const Color kError = Color(0xFFFF453A);
 
-// Переходы между экранами без анимации: требование к скорости интерфейса.
 class InstantPageTransitionsBuilder extends PageTransitionsBuilder {
   const InstantPageTransitionsBuilder();
 
@@ -26,29 +24,29 @@ class InstantPageTransitionsBuilder extends PageTransitionsBuilder {
       child;
 }
 
-ThemeData buildDarkTheme() {
+ThemeData buildGlassTheme() {
   final base = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: const ColorScheme.dark(
       primary: kAccent,
-      onPrimary: Colors.black,
+      onPrimary: Colors.white,
       secondary: kAccent,
-      onSecondary: Colors.black,
+      onSecondary: Colors.white,
       surface: kBackground,
       onSurface: kTextPrimary,
-      secondaryContainer: kSurfaceHigh,
+      secondaryContainer: Color(0x33FFFFFF),
       onSecondaryContainer: kTextPrimary,
-      outline: kBorder,
+      outline: Color(0x33FFFFFF),
       error: kError,
-      onError: Colors.black,
+      onError: Colors.white,
     ),
   );
-  // Шрифт системный (Roboto/SF Pro): ноль ассетов, мгновенный первый кадр.
+  // Шрифт системный (SF Pro/Roboto): нативный iOS-вид и ноль ассетов.
   return base.copyWith(
     scaffoldBackgroundColor: kBackground,
     appBarTheme: const AppBarTheme(
-      backgroundColor: kBackground,
+      backgroundColor: Colors.transparent,
       foregroundColor: kTextPrimary,
       elevation: 0,
       centerTitle: false,
@@ -60,56 +58,57 @@ ThemeData buildDarkTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: kSurface,
+      fillColor: const Color(0x14FFFFFF),
       labelStyle: const TextStyle(color: kTextSecondary),
-      hintStyle: const TextStyle(color: Color(0xFF8A8A8A)),
+      hintStyle: const TextStyle(color: Color(0xFF8A93A8)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: kBorder),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0x29FFFFFF)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: kBorder),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0x29FFFFFF)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: kAccent, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: kError),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: kError, width: 1.5),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: kAccent,
+        backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         minimumSize: const Size(0, 52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: kTextPrimary,
-        side: const BorderSide(color: kBorder),
+        backgroundColor: const Color(0x14FFFFFF),
+        side: const BorderSide(color: Color(0x29FFFFFF)),
         minimumSize: const Size(0, 48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     snackBarTheme: const SnackBarThemeData(
-      backgroundColor: kSurfaceHigh,
+      backgroundColor: Color(0xE61C2333),
       contentTextStyle: TextStyle(color: kTextPrimary, fontSize: 14),
       behavior: SnackBarBehavior.floating,
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(color: kAccent),
-    dividerColor: kBorder,
+    dividerColor: const Color(0x29FFFFFF),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
         TargetPlatform.android: InstantPageTransitionsBuilder(),
@@ -117,4 +116,97 @@ ThemeData buildDarkTheme() {
       },
     ),
   );
+}
+
+class GlassCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets padding;
+  final double radius;
+  final double tint;
+
+  const GlassCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(20),
+    this.radius = 28,
+    this.tint = 0.07,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        child: Container(
+          width: double.infinity,
+          padding: padding,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: tint),
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: tint + 0.10),
+            ),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.13),
+                Colors.white.withValues(alpha: 0.02),
+              ],
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class Wallpaper extends StatelessWidget {
+  const Wallpaper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(color: kBackground),
+        Positioned(
+          top: -120,
+          left: -80,
+          child: Container(
+            width: 360,
+            height: 360,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF27407F).withValues(alpha: 0.55),
+                  const Color(0xFF27407F).withValues(alpha: 0),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -140,
+          right: -100,
+          child: Container(
+            width: 420,
+            height: 420,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF0E3B43).withValues(alpha: 0.6),
+                  const Color(0xFF0E3B43).withValues(alpha: 0),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

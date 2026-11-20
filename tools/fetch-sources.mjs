@@ -33,7 +33,8 @@ for (const date of days.slice(0, 21)) {
   }
 }
 
-const bellsPage = await (await get('https://guo-mpk.by/raspisanie-zvonkov/')).text();
+const bellsPageRaw = await (await get('https://guo-mpk.by/raspisanie-zvonkov/')).text();
+const bellsPage = bellsPageRaw.replaceAll('&#038;', '&').replaceAll('&amp;', '&');
 const fileParam = bellsPage.match(/[?&]file=(https%3A%2F%2F[^&"#]+)/);
 let pdfUrl;
 if (fileParam) {

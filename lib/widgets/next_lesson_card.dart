@@ -16,15 +16,8 @@ class NextLessonCard extends StatelessWidget {
 
     if (next == null) {
       if (snapshot.phase != DayPhase.lesson) return const SizedBox.shrink();
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: kSurface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: kBorder),
-        ),
-        child: const Column(
+      return const GlassCard(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -45,14 +38,8 @@ class NextLessonCard extends StatelessWidget {
       );
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: kSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: kBorder),
-      ),
+    return GlassCard(
+      tint: 0.10,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -98,7 +85,7 @@ class NextLessonCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 80,
                 fontWeight: FontWeight.w800,
-                color: kAccent,
+                color: kTextPrimary,
                 height: 1.05,
               ),
             ),
