@@ -45,6 +45,7 @@ void main() {
     expect(find.text('Укажите учебную группу'), findsOneWidget);
     await tester.tap(find.text('Открыть настройки'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.text('Настройки'), findsOneWidget);
     expect(find.text('Учебная группа'), findsOneWidget);
@@ -113,6 +114,7 @@ void main() {
 
     await tester.tap(find.text('Открыть настройки'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
     await tester.enterText(find.byType(TextField), 'ПО-33');
     await tester.tap(find.text('Сохранить группу'));
