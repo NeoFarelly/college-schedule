@@ -69,7 +69,7 @@ for (const file of files.sort()) {
   days.push(date);
   console.log('parsed', date, Object.keys(groups).length, 'groups');
 }
-const groupList = [...allGroups].sort((a, b) => ruKey(a).compareTo(ruKey(b)));
+const groupList = [...allGroups].sort((a, b) => ruKey(a).localeCompare(ruKey(b), 'ru'));
 
 let bellsUpdatedAt = '';
 try {
