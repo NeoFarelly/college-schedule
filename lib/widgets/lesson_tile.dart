@@ -25,7 +25,7 @@ class LessonTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: GlassCard(
         radius: 20,
-        tint: isCurrent ? 0.14 : 0.06,
+        tint: isCurrent ? 0.06 : 0.04,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -37,7 +37,7 @@ class LessonTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: isCurrent ? kAccent : kTextSecondary,
+                  color: isCurrent ? kTextPrimary : kTextSecondary,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),

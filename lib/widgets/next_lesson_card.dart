@@ -39,7 +39,7 @@ class NextLessonCard extends StatelessWidget {
     }
 
     return GlassCard(
-      tint: 0.10,
+      tint: 0.06,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

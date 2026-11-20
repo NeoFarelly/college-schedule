@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 // Обои-подложка нужны материалу стекла для преломления; акцент один, iOS blue.
 const Color kBackground = Color(0xFF070B18);
 const Color kTextPrimary = Color(0xFFF5F7FA);
-const Color kTextSecondary = Color(0xFFA8B0C2);
+const Color kTextSecondary = Color(0xFFC9CFDC);
 const Color kAccent = Color(0xFF0A84FF);
-const Color kError = Color(0xFFFF453A);
+const Color kError = Color(0xFFFFC9C2);
 
 class InstantPageTransitionsBuilder extends PageTransitionsBuilder {
   const InstantPageTransitionsBuilder();
@@ -35,8 +35,8 @@ ThemeData buildGlassTheme() {
       onSecondary: Colors.white,
       surface: kBackground,
       onSurface: kTextPrimary,
-      secondaryContainer: Color(0x33FFFFFF),
-      onSecondaryContainer: kTextPrimary,
+      secondaryContainer: Colors.white,
+      onSecondaryContainer: Colors.black,
       outline: Color(0x33FFFFFF),
       error: kError,
       onError: Colors.white,
@@ -60,7 +60,7 @@ ThemeData buildGlassTheme() {
       filled: true,
       fillColor: const Color(0x14FFFFFF),
       labelStyle: const TextStyle(color: kTextSecondary),
-      hintStyle: const TextStyle(color: Color(0xFF8A93A8)),
+      hintStyle: const TextStyle(color: Color(0xFFC9CFDC)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -129,7 +129,7 @@ class GlassCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.radius = 28,
-    this.tint = 0.07,
+    this.tint = 0.05,
   });
 
   @override
@@ -151,8 +151,8 @@ class GlassCard extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.white.withValues(alpha: 0.13),
-                Colors.white.withValues(alpha: 0.02),
+                Colors.white.withValues(alpha: 0.03),
+                Colors.white.withValues(alpha: 0.01),
               ],
             ),
           ),
@@ -182,7 +182,7 @@ class Wallpaper extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF27407F).withValues(alpha: 0.55),
+                  const Color(0xFF27407F).withValues(alpha: 0.25),
                   const Color(0xFF27407F).withValues(alpha: 0),
                 ],
               ),
@@ -199,7 +199,7 @@ class Wallpaper extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF0E3B43).withValues(alpha: 0.6),
+                  const Color(0xFF0E3B43).withValues(alpha: 0.28),
                   const Color(0xFF0E3B43).withValues(alpha: 0),
                 ],
               ),

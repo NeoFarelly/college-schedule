@@ -198,16 +198,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     selected: date == controller.selectedDate,
                     showCheckmark: false,
                     onSelected: (_) => controller.selectDate(date),
-                    selectedColor: Colors.white.withValues(alpha: 0.22),
+                    selectedColor: Colors.white,
                     backgroundColor: Colors.white.withValues(alpha: 0.08),
                     side: BorderSide(
                       color: Colors.white.withValues(alpha: 0.16),
                     ),
                     labelStyle: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: date == controller.selectedDate
+                          ? FontWeight.w700
+                          : FontWeight.w600,
                       color: date == controller.selectedDate
-                          ? kTextPrimary
+                          ? Colors.black
                           : kTextSecondary,
                     ),
                   );
