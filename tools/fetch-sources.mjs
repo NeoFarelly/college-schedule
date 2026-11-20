@@ -34,12 +34,12 @@ for (const date of days.slice(0, 21)) {
 }
 
 const bellsPage = await (await get('https://guo-mpk.by/raspisanie-zvonkov/')).text();
-const fileParam = bellsPage.match(/get_viewer&(?:amp;)?file=([^&"#]+)/);
+const fileParam = bellsPage.match(/[?&]file=(https%3A%2F%2F[^&"#]+)/);
 let pdfUrl;
 if (fileParam) {
   pdfUrl = decodeURIComponent(fileParam[1]);
 } else {
-  const direct = bellsPage.match(/https:\/\/guo-mpk\.by\/wp-content\/uploads\/[^"'&\s<>]+\.pdf/);
+  const direct = bellsPage.match(/https:\/\/guo-mpk\.by\/wp-content\/uploads\/[^"'&\s<>]*raspisanie[^"'&\s<>]*\.pdf/);
   if (!direct) throw new Error('bells pdf url not found');
   pdfUrl = direct[0];
 }
