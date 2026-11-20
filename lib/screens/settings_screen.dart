@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../models/bell_schedule.dart';
 import '../services/schedule_controller.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/bells_editor.dart';
@@ -15,7 +16,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _saturday = false;
+  BellDayType _type = BellDayType.weekday;
   bool _refreshing = false;
 
   Future<void> _forceRefresh() async {
@@ -55,7 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListenableBuilder(
             listenable: controller,
             builder: (context, _) {
-              final bells = controller.bellsForDayType(_saturday);
+              final bells = controller.bellsForType(_type);
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 children: [
@@ -94,20 +95,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: TextStyle(fontSize: 13, color: kTextSecondary),
                   ),
                   const SizedBox(height: 12),
-                  SegmentedButton<bool>(
+                  SegmentedButton<BellDayType>(
                     segments: const [
-                      ButtonSegment(value: false, label: Text('Будни')),
-                      ButtonSegment(value: true, label: Text('Суббота')),
+                      ButtonSegment(
+                        value: BellDayType.weekday,
+                        label: Text('Будни'),
+                      ),
+                      ButtonSegment(
+                        value: BellDayType.thursday,
+                        label: Text('Четверг'),
+                      ),
+                      ButtonSegment(
+                        value: BellDayType.saturday,
+                        label: Text('Суббота'),
+                      ),
                     ],
-                    selected: {_saturday},
+                    selected: {_type},
                     onSelectionChanged: (selection) =>
-                        setState(() => _saturday = selection.first),
+                        setState(() => _type = selection.first),
                   ),
                   const SizedBox(height: 16),
                   BellsEditor(
                     schedule: bells,
                     onChanged: (schedule) =>
-                        controller.saveOverride(schedule, saturday: _saturday),
+                        controller.saveOverride(schedule, _type),
                   ),
                   const SizedBox(height: 8),
                   Align(

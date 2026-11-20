@@ -27,15 +27,17 @@ const _tomorrowLesson = Lesson(
   teacher: 'Гусев П. А.',
 );
 
+final _weekdayBells = [
+  {'start': '08:30', 'end': '10:00'},
+  {'start': '10:10', 'end': '11:40'},
+  {'start': '12:10', 'end': '13:40'},
+  {'start': '13:50', 'end': '15:20'},
+  {'start': '15:30', 'end': '17:00'},
+  {'start': '17:10', 'end': '18:40'},
+];
 final _bellsJson = {
-  'weekday': [
-    {'start': '08:30', 'end': '10:00'},
-    {'start': '10:10', 'end': '11:40'},
-    {'start': '12:10', 'end': '13:40'},
-    {'start': '13:50', 'end': '15:20'},
-    {'start': '15:30', 'end': '17:00'},
-    {'start': '17:10', 'end': '18:40'},
-  ],
+  'weekday': _weekdayBells,
+  'thursday': _weekdayBells,
   'saturday': [
     {'start': '08:30', 'end': '09:40'},
     {'start': '09:50', 'end': '11:00'},

@@ -19,7 +19,14 @@ void main() {
       teacher: 'Лебедева М. В.',
     ),
   ];
-  final bells = BellSchedule.weekday();
+  final bells = const BellSchedule([
+    BellPeriod(510, 600),
+    BellPeriod(610, 700),
+    BellPeriod(730, 820),
+    BellPeriod(830, 920),
+    BellPeriod(930, 1020),
+    BellPeriod(1030, 1120),
+  ]);
   DateTime at(int h, int m) => DateTime(2026, 11, 20, h, m);
 
   test('идет вторая пара: текущая, следующая и конец пары', () {
@@ -75,7 +82,14 @@ void main() {
   });
 
   test('субботние звонки: сокращенная пара', () {
-    final saturday = BellSchedule.saturday();
+    final saturday = const BellSchedule([
+      BellPeriod(510, 580),
+      BellPeriod(590, 660),
+      BellPeriod(670, 740),
+      BellPeriod(750, 820),
+      BellPeriod(830, 900),
+      BellPeriod(910, 980),
+    ]);
     final s = snapshotAt(lessons, saturday, at(9, 30));
     expect(s.phase, DayPhase.lesson);
     expect(s.current!.number, 1);

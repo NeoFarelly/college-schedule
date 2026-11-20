@@ -63,5 +63,63 @@ try {
   const bells = JSON.parse(await readFile('data/bells.json', 'utf8'));
   bellsUpdatedAt = bells.updatedAt ?? '';
 } catch {}
+
+const toMin = (s) => {
+  const [h, m] = s.split(':').map(Number);
+  return h * 60 + m;
+};
+
+function parseBells(text) {
+  const cols = [[], [], []];
+  for (const line of text.split('\n')) {
+    const m = line.match(/^\s*(\d{1,2})\s+(.*)$/);
+    if (!m) continue;
+    const n = Number(m[1]);
+    if (n < 1 || n > 12) continue;
+    const ranges = [...m[2].matchAll(/(\d{1,2})\D{0,2}(\d{2})\s*[-–—]\s*(\d{1,2})\D{0,2}(\d{2})/g)]
+      .map((r) => ({
+        start: `${r[1].padStart(2, '0')}:${r[2]}`,
+        end: `${r[3].padStart(2, '0')}:${r[4]}`,
+      }));
+    for (let c = 0; c < 3; c++) {
+      if (ranges[c]) cols[c][n - 1] = ranges[c];
+    }
+  }
+  const valid = (col) => {
+    if (!col.length || col.some((v) => !v)) return null;
+    if (col.length < 6) return null;
+    for (let i = 0; i < col.length; i++) {
+      const s = toMin(col[i].start);
+      const e = toMin(col[i].end);
+      if (e <= s || e - s > 120) return null;
+      if (i > 0) {
+        const gap = s - toMin(col[i - 1].end);
+        if (gap < 5 || gap > 35) return null;
+      }
+    }
+    return col;
+  };
+  const weekday = valid(cols[0]);
+  const thursday = valid(cols[1]);
+  const saturday = valid(cols[2]);
+  if (!weekday || !thursday || !saturday) return null;
+  return { weekday, thursday, saturday };
+}
+
+try {
+  const ocr = parseBells(await readFile('sources/bells-ocr.txt', 'utf8'));
+  if (ocr) {
+    ocr.updatedAt = new Date().toISOString();
+    ocr.source = 'ocr';
+    await writeFile('data/bells.json', JSON.stringify(ocr, null, 1));
+    bellsUpdatedAt = ocr.updatedAt;
+    console.log('bells updated from OCR');
+  } else {
+    console.log('bells OCR unreadable, keeping committed bells.json');
+  }
+} catch {
+  console.log('bells OCR missing, keeping committed bells.json');
+}
+
 await writeFile('data/index.json', JSON.stringify({ group: GROUP, days, bellsUpdatedAt }, null, 1));
 console.log('index', days.length, 'days');

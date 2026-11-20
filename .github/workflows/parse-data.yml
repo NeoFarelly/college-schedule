@@ -28,8 +28,8 @@ jobs:
       - run: node tools/fetch-sources.mjs
 
       - run: |
-          pdftoppm -png -r 200 -f 1 -l 1 sources/bells.pdf sources/bells
-          tesseract sources/bells-1.png sources/bells-ocr -l rus
+          pdftoppm -png -r 300 -f 1 -l 1 sources/bells.pdf sources/bells
+          tesseract sources/bells-1.png sources/bells-ocr -l rus --psm 6
 
       - run: node tools/parse.mjs
         if: hashFiles('tools/parse.mjs') != ''

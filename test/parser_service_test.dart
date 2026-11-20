@@ -6,15 +6,17 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  final weekdayBells = [
+    {'start': '08:30', 'end': '10:00'},
+    {'start': '10:10', 'end': '11:40'},
+    {'start': '12:10', 'end': '13:40'},
+    {'start': '13:50', 'end': '15:20'},
+    {'start': '15:30', 'end': '17:00'},
+    {'start': '17:10', 'end': '18:40'},
+  ];
   final bellsJson = {
-    'weekday': [
-      {'start': '08:30', 'end': '10:00'},
-      {'start': '10:10', 'end': '11:40'},
-      {'start': '12:10', 'end': '13:40'},
-      {'start': '13:50', 'end': '15:20'},
-      {'start': '15:30', 'end': '17:00'},
-      {'start': '17:10', 'end': '18:40'},
-    ],
+    'weekday': weekdayBells,
+    'thursday': weekdayBells,
     'saturday': [
       {'start': '08:30', 'end': '09:40'},
       {'start': '09:50', 'end': '11:00'},
@@ -69,6 +71,7 @@ void main() {
     expect(bells.weekday.periods.first.startMinutes, 510);
     expect(bells.weekday.periods.first.endMinutes, 600);
     expect(bells.saturday.periods.first.endMinutes, 580);
+    expect(bells.thursday.periods.first.startMinutes, 510);
   });
 
   test('404 дает ошибку, а не пустые данные', () async {

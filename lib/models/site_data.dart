@@ -23,12 +23,18 @@ class ScheduleManifest {
 
 class SiteBells {
   final BellSchedule weekday;
+  final BellSchedule thursday;
   final BellSchedule saturday;
 
-  const SiteBells({required this.weekday, required this.saturday});
+  const SiteBells({
+    required this.weekday,
+    required this.thursday,
+    required this.saturday,
+  });
 
   factory SiteBells.fromJson(Map<String, dynamic> json) => SiteBells(
         weekday: _schedule(json['weekday']),
+        thursday: _schedule(json['thursday'] ?? json['weekday']),
         saturday: _schedule(json['saturday']),
       );
 
@@ -43,12 +49,20 @@ class SiteBells {
             .toList(),
       );
 
-  Map<String, dynamic> toJson() => {
-        'weekday': weekday.periods
-            .map((p) => {'start': p.startLabel, 'end': p.endLabel})
-            .toList(),
-        'saturday': saturday.periods
-            .map((p) => {'start': p.startLabel, 'end': p.endLabel})
-            .toList(),
+  BellSchedule forType(BellDayType type) => switch (type) {
+        BellDayType.weekday => weekday,
+        BellDayType.thursday => thursday,
+        BellDayType.saturday => saturday,
       };
+
+  Map<String, dynamic> toJson() => {
+        'weekday': _labels(weekday),
+        'thursday': _labels(thursday),
+        'saturday': _labels(saturday),
+      };
+
+  static List<Map<String, String>> _labels(BellSchedule schedule) => schedule
+      .periods
+      .map((p) => {'start': p.startLabel, 'end': p.endLabel})
+      .toList();
 }

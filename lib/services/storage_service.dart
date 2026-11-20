@@ -13,8 +13,8 @@ class StorageService {
 
   static const _manifestKey = 'manifest';
   static const _siteBellsKey = 'bells_site';
-  static const _overrideWeekdayKey = 'bells_override_weekday';
-  static const _overrideSaturdayKey = 'bells_override_saturday';
+
+  String _overrideKey(BellDayType type) => 'bells_override_${type.name}';
 
   String _dayKey(String date) => 'day_$date';
 
@@ -44,10 +44,8 @@ class StorageService {
   Future<void> saveSiteBells(SiteBells bells) =>
       _prefs.setString(_siteBellsKey, jsonEncode(bells.toJson()));
 
-  BellSchedule? loadOverride({required bool saturday}) {
-    final raw = _prefs.getString(
-      saturday ? _overrideSaturdayKey : _overrideWeekdayKey,
-    );
+  BellSchedule? loadOverride(BellDayType type) {
+    final raw = _prefs.getString(_overrideKey(type));
     if (raw == null) return null;
     try {
       return BellSchedule.fromJson(jsonDecode(raw) as Map<String, dynamic>);
@@ -56,15 +54,13 @@ class StorageService {
     }
   }
 
-  Future<void> saveOverride(BellSchedule schedule, {required bool saturday}) =>
-      _prefs.setString(
-        saturday ? _overrideSaturdayKey : _overrideWeekdayKey,
-        jsonEncode(schedule.toJson()),
-      );
+  Future<void> saveOverride(BellSchedule schedule, BellDayType type) =>
+      _prefs.setString(_overrideKey(type), jsonEncode(schedule.toJson()));
 
   Future<void> clearOverrides() async {
-    await _prefs.remove(_overrideWeekdayKey);
-    await _prefs.remove(_overrideSaturdayKey);
+    for (final type in BellDayType.values) {
+      await _prefs.remove(_overrideKey(type));
+    }
   }
 
   CachedSchedule? loadDay(String date) {

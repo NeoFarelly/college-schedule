@@ -26,14 +26,15 @@ class ScheduleController extends ChangeNotifier {
   bool offline = false;
   DateTime? updatedAt;
   SiteBells? siteBells;
-  BellSchedule? overrideWeekday;
-  BellSchedule? overrideSaturday;
+  final Map<BellDayType, BellSchedule> overrides = {};
   bool _refreshing = false;
   String _loadedToday = isoDate(DateTime.now());
 
   Future<void> loadCached() async {
-    overrideWeekday = storage.loadOverride(saturday: false);
-    overrideSaturday = storage.loadOverride(saturday: true);
+    for (final type in BellDayType.values) {
+      final override = storage.loadOverride(type);
+      if (override != null) overrides[type] = override;
+    }
     siteBells = storage.loadSiteBells();
     days = storage.loadManifest()?.days ?? [];
     final cache = storage.loadDay(selectedDate);
@@ -125,32 +126,36 @@ class ScheduleController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveOverride(BellSchedule schedule, {required bool saturday}) async {
-    if (saturday) {
-      overrideSaturday = schedule;
-    } else {
-      overrideWeekday = schedule;
-    }
-    await storage.saveOverride(schedule, saturday: saturday);
+  Future<void> saveOverride(BellSchedule schedule, BellDayType type) async {
+    overrides[type] = schedule;
+    await storage.saveOverride(schedule, type);
     notifyListeners();
   }
 
   Future<void> resetOverrides() async {
-    overrideWeekday = null;
-    overrideSaturday = null;
+    overrides.clear();
     await storage.clearOverrides();
     notifyListeners();
   }
 
-  BellSchedule bellsFor(DateTime day) =>
-      bellsForDayType(day.weekday == DateTime.saturday);
+  BellSchedule bellsFor(DateTime day) => bellsForType(
+        day.weekday == DateTime.saturday
+            ? BellDayType.saturday
+            : day.weekday == DateTime.thursday
+                ? BellDayType.thursday
+                : BellDayType.weekday,
+      );
 
-  BellSchedule bellsForDayType(bool saturday) {
-    final override = saturday ? overrideSaturday : overrideWeekday;
+  BellSchedule bellsForType(BellDayType type) {
+    final override = overrides[type];
     if (override != null) return override;
     final site = siteBells;
-    if (site != null) return saturday ? site.saturday : site.weekday;
-    return saturday ? BellSchedule.saturday() : BellSchedule.weekday();
+    if (site != null) return site.forType(type);
+    return switch (type) {
+      BellDayType.weekday => BellSchedule.weekday(),
+      BellDayType.thursday => BellSchedule.thursday(),
+      BellDayType.saturday => BellSchedule.saturday(),
+    };
   }
 
   bool get isToday => selectedDate == isoDate(DateTime.now());
