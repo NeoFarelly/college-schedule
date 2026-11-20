@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../models/lesson.dart';
 import '../models/site_data.dart';
 
 // Расписание и звонки парсятся в GitHub Actions (doc + OCR скана PDF)
@@ -20,12 +19,8 @@ class ParserService {
   Future<ScheduleManifest> fetchManifest() async =>
       ScheduleManifest.fromJson(await _getJson('index.json'));
 
-  Future<List<Lesson>> fetchDay(String date) async {
-    final json = await _getJson('day-$date.json');
-    return (json['lessons'] as List<dynamic>)
-        .map((e) => Lesson.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
+  Future<DaySchedule> fetchDay(String date) async =>
+      DaySchedule.fromJson(await _getJson('day-$date.json'));
 
   Future<SiteBells> fetchBells() async =>
       SiteBells.fromJson(await _getJson('bells.json'));

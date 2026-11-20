@@ -1,40 +1,32 @@
 import 'lesson.dart';
+import 'site_data.dart';
 
 String isoDate(DateTime date) =>
     '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
 class CachedSchedule {
-  final String group;
   final String date;
   final DateTime updatedAt;
-  final bool isMock;
-  final List<Lesson> lessons;
+  final Map<String, List<Lesson>> groups;
 
   const CachedSchedule({
-    required this.group,
     required this.date,
     required this.updatedAt,
-    required this.isMock,
-    required this.lessons,
+    required this.groups,
   });
 
   bool isForToday(DateTime now) => date == isoDate(now);
 
-  factory CachedSchedule.fromJson(Map<String, dynamic> json) => CachedSchedule(
-        group: json['group'] as String,
+  factory CachedSchedule.fromJson(Map<String, dynamic> json) =>
+      CachedSchedule(
         date: json['date'] as String,
         updatedAt: DateTime.parse(json['updatedAt'] as String),
-        isMock: json['isMock'] as bool? ?? false,
-        lessons: (json['lessons'] as List<dynamic>)
-            .map((e) => Lesson.fromJson(e as Map<String, dynamic>))
-            .toList(),
+        groups: DaySchedule.fromJson({'date': json['date'], 'groups': json['groups']}).groups,
       );
 
   Map<String, dynamic> toJson() => {
-        'group': group,
         'date': date,
         'updatedAt': updatedAt.toIso8601String(),
-        'isMock': isMock,
-        'lessons': lessons.map((l) => l.toJson()).toList(),
+        'groups': groups.map((key, value) => MapEntry(key, value.map((l) => l.toJson()).toList())),
       };
 }

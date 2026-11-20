@@ -30,7 +30,7 @@ void main() {
     final path = request.url.path;
     if (path.endsWith('index.json')) {
       return http.Response(
-        jsonEncode({'group': '21Н', 'days': ['2026-11-20'], 'bellsUpdatedAt': ''}),
+        jsonEncode({'group': '21Н', 'days': ['2026-11-20'], 'groups': ['21Н'], 'bellsUpdatedAt': ''}),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},
       );
@@ -39,9 +39,11 @@ void main() {
       return http.Response(
         jsonEncode({
           'date': '2026-11-20',
-          'lessons': [
-            {'number': 1, 'subject': 'ФТТ', 'room': '213', 'teacher': 'Юхновец С.В.'},
-          ],
+          'groups': {
+            '21Н': [
+              {'number': 1, 'subject': 'ФТТ', 'room': '213', 'teacher': 'Юхновец С.В.'},
+            ],
+          },
         }),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},
@@ -59,8 +61,9 @@ void main() {
     expect(manifest.days, ['2026-11-20']);
   });
 
-  test('день парсится в уроки', () async {
-    final lessons = await parser.fetchDay('2026-11-20');
+  test('день парсится в уроки по группам', () async {
+    final day = await parser.fetchDay('2026-11-20');
+    final lessons = day.groups['21Н']!;
     expect(lessons.single.subject, 'ФТТ');
     expect(lessons.single.room, '213');
     expect(lessons.single.teacher, 'Юхновец С.В.');

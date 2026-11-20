@@ -7,6 +7,7 @@ import '../models/cached_schedule.dart';
 import '../models/schedule_snapshot.dart';
 import '../services/schedule_controller.dart';
 import '../widgets/app_theme.dart';
+import '../widgets/group_picker.dart';
 import '../widgets/lesson_tile.dart';
 import '../widgets/next_lesson_card.dart';
 import '../widgets/now_card.dart';
@@ -170,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     icon: Icons.event_busy_outlined,
                     title: 'В этот день пар нет',
                     subtitle: published
-                        ? 'У группы 21Н в этот день занятий нет.'
+                        ? 'У группы ${controller.selectedGroup} в этот день занятий нет.'
                         : 'Расписание на этот день еще не опубликовано на сайте.',
                   );
                 }
@@ -201,23 +202,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      capitalized,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: kTextPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Группа 21Н',
-                      style: TextStyle(fontSize: 14, color: kTextSecondary),
-                    ),
-                  ],
+                child: Text(
+                  capitalized,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: kTextPrimary,
+                  ),
                 ),
               ),
               IconButton(
@@ -230,7 +221,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ],
           ),
           const SizedBox(height: 6),
-          _StatusLine(controller: controller),
+          Row(
+            children: [
+              OutlinedButton(
+                onPressed: () => showGroupPicker(context, controller),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                child: Text('Группа ${controller.selectedGroup}'),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: _StatusLine(controller: controller)),
+            ],
+          ),
           const SizedBox(height: 12),
           if (controller.days.isNotEmpty)
             SizedBox(
@@ -335,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 class _StatusLine extends StatelessWidget {
   final ScheduleController controller;
 
-  const _StatusLine({super.key, required this.controller});
+  const _StatusLine({required this.controller});
 
   @override
   Widget build(BuildContext context) {

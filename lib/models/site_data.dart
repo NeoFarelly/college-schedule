@@ -1,23 +1,52 @@
 import 'bell_schedule.dart';
+import 'lesson.dart';
 
 class ScheduleManifest {
   final List<String> days;
+  final List<String> groups;
   final String bellsUpdatedAt;
 
   const ScheduleManifest({
     required this.days,
+    required this.groups,
     required this.bellsUpdatedAt,
   });
 
   factory ScheduleManifest.fromJson(Map<String, dynamic> json) =>
       ScheduleManifest(
         days: (json['days'] as List<dynamic>).cast<String>(),
+        groups: (json['groups'] as List<dynamic>? ?? []).cast<String>(),
         bellsUpdatedAt: json['bellsUpdatedAt'] as String? ?? '',
       );
 
   Map<String, dynamic> toJson() => {
         'days': days,
+        'groups': groups,
         'bellsUpdatedAt': bellsUpdatedAt,
+      };
+}
+
+class DaySchedule {
+  final String date;
+  final Map<String, List<Lesson>> groups;
+
+  const DaySchedule({required this.date, required this.groups});
+
+  factory DaySchedule.fromJson(Map<String, dynamic> json) => DaySchedule(
+        date: json['date'] as String,
+        groups: (json['groups'] as Map<String, dynamic>).map(
+          (key, value) => MapEntry(
+            key,
+            (value as List<dynamic>)
+                .map((e) => Lesson.fromJson(e as Map<String, dynamic>))
+                .toList(),
+          ),
+        ),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'date': date,
+        'groups': groups.map((key, value) => MapEntry(key, value.map((l) => l.toJson()).toList())),
       };
 }
 

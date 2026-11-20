@@ -17,11 +17,13 @@ class ScheduleController extends ChangeNotifier {
 
   ScheduleController({required this.storage, required this.parser});
 
-  static const group = '21Н';
+  static const defaultGroup = '21Н';
 
   List<String> days = [];
+  List<String> manifestGroups = [];
   String selectedDate = isoDate(DateTime.now());
-  List<Lesson> lessons = [];
+  String selectedGroup = defaultGroup;
+  Map<String, List<Lesson>> dayGroups = {};
   ScheduleStatus status = ScheduleStatus.loading;
   bool offline = false;
   DateTime? updatedAt;
@@ -30,20 +32,31 @@ class ScheduleController extends ChangeNotifier {
   bool _refreshing = false;
   String _loadedToday = isoDate(DateTime.now());
 
+  List<Lesson> get lessons => dayGroups[selectedGroup] ?? const [];
+
+  List<String> get availableGroups {
+    final set = <String>{...manifestGroups, ...dayGroups.keys};
+    return set.toList()
+      ..sort((a, b) => a.replaceAll('Ё', 'Е').compareTo(b.replaceAll('Ё', 'Е')));
+  }
+
   Future<void> loadCached() async {
+    selectedGroup = storage.loadGroup();
     for (final type in BellDayType.values) {
       final override = storage.loadOverride(type);
       if (override != null) overrides[type] = override;
     }
     siteBells = storage.loadSiteBells();
-    days = storage.loadManifest()?.days ?? [];
+    final manifest = storage.loadManifest();
+    days = manifest?.days ?? [];
+    manifestGroups = manifest?.groups ?? [];
     final cache = storage.loadDay(selectedDate);
     if (cache != null && cache.date == selectedDate) {
-      lessons = cache.lessons;
+      dayGroups = cache.groups;
       updatedAt = cache.updatedAt;
       status = ScheduleStatus.ready;
     } else {
-      lessons = [];
+      dayGroups = {};
       status = ScheduleStatus.loading;
     }
     notifyListeners();
@@ -60,6 +73,7 @@ class ScheduleController extends ChangeNotifier {
     try {
       final manifest = await parser.fetchManifest();
       days = manifest.days;
+      manifestGroups = manifest.groups;
       await storage.saveManifest(manifest);
       try {
         final bells = await parser.fetchBells();
@@ -84,23 +98,27 @@ class ScheduleController extends ChangeNotifier {
 
   Future<void> _loadDay(String date) async {
     if (!days.contains(date)) {
-      lessons = [];
+      dayGroups = {};
       updatedAt = DateTime.now();
       status = ScheduleStatus.ready;
       return;
     }
     final result = await parser.fetchDay(date);
-    result.sort((a, b) => a.number.compareTo(b.number));
-    lessons = result;
+    dayGroups = result.groups;
     updatedAt = DateTime.now();
     status = ScheduleStatus.ready;
     await storage.saveDay(CachedSchedule(
-      group: group,
       date: date,
       updatedAt: updatedAt!,
-      isMock: false,
-      lessons: lessons,
+      groups: dayGroups,
     ));
+  }
+
+  Future<void> selectGroup(String group) async {
+    if (group == selectedGroup) return;
+    selectedGroup = group;
+    await storage.saveGroup(group);
+    notifyListeners();
   }
 
   Future<void> selectDate(String date) async {
@@ -108,11 +126,11 @@ class ScheduleController extends ChangeNotifier {
     selectedDate = date;
     final cache = storage.loadDay(date);
     if (cache != null && cache.date == date) {
-      lessons = cache.lessons;
+      dayGroups = cache.groups;
       updatedAt = cache.updatedAt;
       status = ScheduleStatus.ready;
     } else {
-      lessons = [];
+      dayGroups = {};
       status = ScheduleStatus.loading;
     }
     notifyListeners();

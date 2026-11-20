@@ -10,53 +10,66 @@ function cells(line) {
   return line.split('│').slice(1, -1).map((c) => c.trim());
 }
 
-function parseDay(text) {
+function parseGroups(text) {
   const lines = text.split('\n');
-  let col = -1;
-  const pairs = new Map();
-  let lastNum = 0;
+  const state = new Map();
+  let active = [];
   for (const line of lines) {
     const cs = cells(line);
     if (!cs) continue;
-    const groups = cs.filter((c) => CELL_GROUP.test(c));
-    if (groups.length >= 2) {
-      col = cs.indexOf(GROUP);
-      lastNum = 0;
+    const headerIdx = cs.map((c, i) => (CELL_GROUP.test(c) ? i : -1)).filter((i) => i >= 0);
+    if (headerIdx.length >= 2) {
+      active = headerIdx.map((i) => ({ idx: i, name: cs[i] }));
+      for (const a of active) {
+        if (!state.has(a.name)) state.set(a.name, { lastNum: 0, pairs: new Map() });
+        state.get(a.name).lastNum = 0;
+      }
       continue;
     }
-    if (col < 0 || col >= cs.length) continue;
-    const cell = cs[col];
-    if (!cell) continue;
-    const m = cell.match(PAIR);
-    if (m) {
-      lastNum = Number(m[1]);
-      const rest = (m[2] ?? '').trim();
-      if (!rest) continue;
-      const rm = rest.match(ROOM_TAIL);
-      pairs.set(lastNum, {
-        number: lastNum,
-        subject: rm ? rm[1].trim() : rest,
-        room: rm ? rm[2].trim() : '',
-        teacher: '',
-      });
-    } else if (lastNum && pairs.has(lastNum)) {
-      const p = pairs.get(lastNum);
-      p.teacher = p.teacher ? `${p.teacher} ${cell}` : cell;
+    for (const a of active) {
+      const st = state.get(a.name);
+      const cell = (cs[a.idx] ?? '').trim();
+      if (!cell) continue;
+      const m = cell.match(PAIR);
+      if (m) {
+        st.lastNum = Number(m[1]);
+        const rest = (m[2] ?? '').trim();
+        if (!rest) continue;
+        const rm = rest.match(ROOM_TAIL);
+        st.pairs.set(st.lastNum, {
+          number: st.lastNum,
+          subject: rm ? rm[1].trim() : rest,
+          room: rm ? rm[2].trim() : '',
+          teacher: '',
+        });
+      } else if (st.lastNum && st.pairs.has(st.lastNum)) {
+        const p = st.pairs.get(st.lastNum);
+        p.teacher = p.teacher ? `${p.teacher} ${cell}` : cell;
+      }
     }
   }
-  return [...pairs.values()].sort((a, b) => a.number - b.number);
+  const groups = {};
+  for (const [name, st] of state) {
+    groups[name] = [...st.pairs.values()].sort((a, b) => a.number - b.number);
+  }
+  return groups;
 }
+
+const ruKey = (s) => s.replaceAll('Ё', 'Е');
 
 await mkdir('data', { recursive: true });
 const files = (await readdir('sources')).filter((f) => /^doc-\d{4}-\d{2}-\d{2}\.txt$/.test(f));
 const days = [];
+const allGroups = new Set();
 for (const file of files.sort()) {
   const date = file.slice(4, 14);
-  const lessons = parseDay(await readFile(`sources/${file}`, 'utf8'));
-  await writeFile(`data/day-${date}.json`, JSON.stringify({ date, group: GROUP, lessons }, null, 1));
+  const groups = parseGroups(await readFile(`sources/${file}`, 'utf8'));
+  Object.keys(groups).forEach((g) => allGroups.add(g));
+  await writeFile(`data/day-${date}.json`, JSON.stringify({ date, groups }, null, 1));
   days.push(date);
-  console.log('parsed', date, lessons.length, 'lessons');
+  console.log('parsed', date, Object.keys(groups).length, 'groups');
 }
+const groupList = [...allGroups].sort((a, b) => ruKey(a).compareTo(ruKey(b)));
 
 let bellsUpdatedAt = '';
 try {
@@ -121,5 +134,5 @@ try {
   console.log('bells OCR missing, keeping committed bells.json');
 }
 
-await writeFile('data/index.json', JSON.stringify({ group: GROUP, days, bellsUpdatedAt }, null, 1));
-console.log('index', days.length, 'days');
+await writeFile('data/index.json', JSON.stringify({ group: GROUP, days, groups: groupList, bellsUpdatedAt }, null, 1));
+console.log('index', days.length, 'days', groupList.length, 'groups');

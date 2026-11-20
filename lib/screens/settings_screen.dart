@@ -5,6 +5,7 @@ import '../models/bell_schedule.dart';
 import '../services/schedule_controller.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/bells_editor.dart';
+import '../widgets/group_picker.dart';
 
 class SettingsScreen extends StatefulWidget {
   final ScheduleController controller;
@@ -60,24 +61,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 children: [
-                  GlassCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Группа 21Н',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: kTextPrimary,
+                  InkWell(
+                    borderRadius: BorderRadius.circular(28),
+                    onTap: () => showGroupPicker(context, controller),
+                    child: GlassCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Группа ${controller.selectedGroup}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: kTextPrimary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Расписание берется с guo-mpk.by только для группы 21Н, по дням.',
-                          style: TextStyle(fontSize: 13, color: kTextSecondary),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Расписание с guo-mpk.by. Нажмите, чтобы выбрать свою группу.',
+                            style: TextStyle(fontSize: 13, color: kTextSecondary),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),

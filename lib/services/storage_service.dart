@@ -13,6 +13,11 @@ class StorageService {
 
   static const _manifestKey = 'manifest';
   static const _siteBellsKey = 'bells_site';
+  static const _groupKey = 'group';
+
+  String loadGroup() => _prefs.getString(_groupKey) ?? '21Н';
+
+  Future<void> saveGroup(String group) => _prefs.setString(_groupKey, group);
 
   String _overrideKey(BellDayType type) => 'bells_override_${type.name}';
 

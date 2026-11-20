@@ -26,6 +26,12 @@ const _tomorrowLesson = Lesson(
   room: '402',
   teacher: 'Гусев П. А.',
 );
+const _otherGroupLesson = Lesson(
+  number: 1,
+  subject: 'Химия',
+  room: '12',
+  teacher: 'Фролов И. М.',
+);
 
 final _weekdayBells = [
   {'start': '08:30', 'end': '10:00'},
@@ -53,21 +59,35 @@ http.Client _okClient(String today, String tomorrow) => MockClient((request) asy
       const headers = {'content-type': 'application/json; charset=utf-8'};
       if (path.endsWith('index.json')) {
         return http.Response(
-          jsonEncode({'group': '21Н', 'days': [today, tomorrow], 'bellsUpdatedAt': ''}),
+          jsonEncode({
+            'group': '21Н',
+            'days': [today, tomorrow],
+            'groups': ['21Н', '21О'],
+            'bellsUpdatedAt': '',
+          }),
           200,
           headers: headers,
         );
       }
       if (path.endsWith('day-$today.json')) {
         return http.Response(
-          jsonEncode({'date': today, 'lessons': [_todayLesson.toJson()]}),
+          jsonEncode({
+            'date': today,
+            'groups': {
+              '21Н': [_todayLesson.toJson()],
+              '21О': [_otherGroupLesson.toJson()],
+            },
+          }),
           200,
           headers: headers,
         );
       }
       if (path.endsWith('day-$tomorrow.json')) {
         return http.Response(
-          jsonEncode({'date': tomorrow, 'lessons': [_tomorrowLesson.toJson()]}),
+          jsonEncode({
+            'date': tomorrow,
+            'groups': {'21Н': [_tomorrowLesson.toJson()]},
+          }),
           200,
           headers: headers,
         );
@@ -117,14 +137,12 @@ void main() {
     final now = DateTime.now();
     final today = isoDate(now);
     final controller = await _makeController(prefs: {
-      'manifest': jsonEncode({'days': [today], 'bellsUpdatedAt': ''}),
+      'manifest': jsonEncode({'days': [today], 'groups': ['21Н'], 'bellsUpdatedAt': ''}),
       'bells_site': jsonEncode(_bellsJson),
       'day_$today': jsonEncode(CachedSchedule(
-        group: '21Н',
         date: today,
         updatedAt: now,
-        isMock: false,
-        lessons: [_todayLesson],
+        groups: {'21Н': [_todayLesson]},
       ).toJson()),
     });
     await tester.pumpWidget(ScheduleApp(controller: controller));
@@ -204,6 +222,30 @@ void main() {
 
     expect(controller.selectedDate, tomorrow);
     expect(find.text('Физика'), findsWidgets);
+
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
+
+  testWidgets('выбор группы меняет расписание', (tester) async {
+    final now = DateTime.now();
+    final today = isoDate(now);
+    final tomorrow = isoDate(now.add(const Duration(days: 1)));
+    final controller = await _makeController(client: _okClient(today, tomorrow));
+    await tester.pumpWidget(ScheduleApp(controller: controller));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Математика'), findsWidgets);
+    await tester.tap(find.text('Группа 21Н'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('21О'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(controller.selectedGroup, '21О');
+    expect(find.text('Химия'), findsWidgets);
 
     await tester.pumpWidget(const SizedBox());
     controller.dispose();
